@@ -1,118 +1,104 @@
 import { HttpStatus, Injectable} from '@nestjs/common';
-import { ProfileRO } from './profile.interface';
-import { HttpException } from '@nestjs/common/exceptions/http.exception';
-import { PrismaService } from '../shared/services/prisma.service';
-
-const profileSelect = {
-  username: true,
-  bio: true,
-  image: true,
-  id: true
-};
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { UserEntity } from '../user/user.entity';
+import { DeepPartial } from 'typeorm/common/DeepPartial';
+import { ProfileRO, ProfileData } from './profile.interface';
+import {FollowsEntity} from "./follows.entity";
+import {HttpException} from "@nestjs/common/exceptions/http.exception";
 
 @Injectable()
 export class ProfileService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(UserEntity)
+    private readonly userRepository: Repository<UserEntity>,
+    @InjectRepository(FollowsEntity)
+    private readonly followsRepository: Repository<FollowsEntity>
+  ) {}
 
-  async findProfile(userId: number, followingUsername: string): Promise<any> {
-    const followed = await this.prisma.user.findOne({
-      where: { username: followingUsername },
-      select: profileSelect
-    });
-
-    if (!followed) {
-      throw new HttpException({errors: { user: 'not found' }}, HttpStatus.UNPROCESSABLE_ENTITY);
-    }
-
-    const meFollowing = await this.prisma.user.findMany({
-      where: {
-        AND: [
-          {
-            id: followed.id
-          },
-          {
-            followedBy: {
-              some: { id: +userId }
-            }
-          }
-        ]
-      }
-    });
-
-    const { id, ...rest } = followed;
-    const profile = {
-      ...rest,
-      following: Array.isArray(meFollowing) && meFollowing.length > 0
-    };
-
-    return { profile };
+  async findAll(): Promise<UserEntity[]> {
+    return await this.userRepository.find();
   }
 
-  async follow(userId: string, username: string): Promise<any> {
-    if (!username) {
-      throw new HttpException('Follower username not provided.', HttpStatus.BAD_REQUEST);
+  async findOne(options?: DeepPartial<UserEntity>): Promise<ProfileRO> {
+    const user = await this.userRepository.findOne(options);
+    delete user.id;
+    if (user) delete user.password;
+    return {profile: user};
+  }
+
+  async findProfile(id: number, followingUsername: string): Promise<ProfileRO> {
+    const _profile = await this.userRepository.findOne( {username: followingUsername});
+
+    if(!_profile) return;
+
+    let profile: ProfileData = {
+      username: _profile.username,
+      bio: _profile.bio,
+      image: _profile.image
+    };
+
+    const follows = await this.followsRepository.findOne( {followerId: id, followingId: _profile.id});
+
+    if (id) {
+      profile.following = !!follows;
     }
 
-    const followed = await this.prisma.user.findOne({
-      where: { username },
-      select: profileSelect,
-    });
+    return {profile};
+  }
 
-    if (!followed) {
-      throw new HttpException('User to follow not found.', HttpStatus.UNPROCESSABLE_ENTITY);
+  async follow(followerEmail: string, username: string): Promise<ProfileRO> {
+    if (!followerEmail || !username) {
+      throw new HttpException('Follower email and username not provided.', HttpStatus.BAD_REQUEST);
     }
 
-    await this.prisma.user.update({
-      where: { id: +userId },
-      data: {
-        following: {
-          connect: {
-            id: followed.id
-          }
-        }
-      }
-    });
+    const followingUser = await this.userRepository.findOne({username});
+    const followerUser = await this.userRepository.findOne({email: followerEmail});
 
-    const { id, ...rest } = followed;
-    const profile = {
-      ...rest,
+    if (followingUser.email === followerEmail) {
+      throw new HttpException('FollowerEmail and FollowingId cannot be equal.', HttpStatus.BAD_REQUEST);
+    }
+
+    const _follows = await this.followsRepository.findOne( {followerId: followerUser.id, followingId: followingUser.id});
+
+    if (!_follows) {
+      const follows = new FollowsEntity();
+      follows.followerId = followerUser.id;
+      follows.followingId = followingUser.id;
+      await this.followsRepository.save(follows);
+    }
+
+    let profile: ProfileData = {
+      username: followingUser.username,
+      bio: followingUser.bio,
+      image: followingUser.image,
       following: true
     };
 
-    return { profile };
+    return {profile};
   }
 
-  async unFollow(userId: number, username: string): Promise<ProfileRO> {
-    if (!username) {
-      throw new HttpException('Follower username not provided.', HttpStatus.BAD_REQUEST);
+  async unFollow(followerId: number, username: string): Promise<ProfileRO> {
+    if (!followerId || !username) {
+      throw new HttpException('FollowerId and username not provided.', HttpStatus.BAD_REQUEST);
     }
 
-    const followed = await this.prisma.user.findOne({
-      where: { username },
-      select: profileSelect,
-    });
+    const followingUser = await this.userRepository.findOne({username});
 
-    if (!followed) {
-      throw new HttpException('User to follow not found.', HttpStatus.UNPROCESSABLE_ENTITY);
+    if (followingUser.id === followerId) {
+      throw new HttpException('FollowerId and FollowingId cannot be equal.', HttpStatus.BAD_REQUEST);
     }
+    const followingId = followingUser.id;
+    await this.followsRepository.delete({followerId, followingId});
 
-    await this.prisma.user.update({
-      where: { id: +userId },
-      data: {
-        following: {
-          disconnect: {
-            id: followed.id
-          }
-        }
-      }
-    });
-
-    const { id, ...rest } = followed;
-    const profile = {
-      ...rest,
+    let profile: ProfileData = {
+      username: followingUser.username,
+      bio: followingUser.bio,
+      image: followingUser.image,
       following: false
     };
 
-    return { profile };
+    return {profile};
   }
+
 }

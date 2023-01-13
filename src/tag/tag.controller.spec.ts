@@ -1,8 +1,8 @@
 import { Test } from '@nestjs/testing';
 import { TagController } from './tag.controller';
 import { TagService } from './tag.service';
-import { UserModule } from '../user/user.module';
-import { PrismaService } from '../shared/services/prisma.service';
+import {TypeOrmModule} from "@nestjs/typeorm";
+import {TagEntity} from "./tag.entity";
 
 describe('TagController', () => {
   let tagController: TagController;
@@ -10,9 +10,9 @@ describe('TagController', () => {
 
   beforeEach(async () => {
     const module = await Test.createTestingModule({
-      imports: [UserModule],
+      imports: [TypeOrmModule.forRoot(), TypeOrmModule.forFeature([TagEntity])],
       controllers: [TagController],
-      providers: [TagService, PrismaService],
+      providers: [TagService],
     }).compile();
 
     tagService = module.get<TagService>(TagService);
@@ -21,12 +21,15 @@ describe('TagController', () => {
 
   describe('findAll', () => {
     it('should return an array of tags', async () => {
-      const tags : any[] = [];
-      const createTag = (name) => {
-        return name;
-      };
-      tags.push(createTag('angularjs'));
-      tags.push(createTag('reactjs'));
+      const tags : TagEntity[] = [];
+      const createTag = (id, name) => {
+        const tag = new TagEntity();
+        tag.id = id;
+        tag.tag = name;
+        return tag;
+      }
+      tags.push(createTag(1, 'angularjs'));
+      tags.push(createTag(2, 'reactjs'));
 
       jest.spyOn(tagService, 'findAll').mockImplementation(() => Promise.resolve(tags));
       

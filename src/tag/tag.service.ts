@@ -1,14 +1,17 @@
 import { Injectable} from '@nestjs/common';
-import { PrismaService } from '../shared/services/prisma.service';
-import { Tag } from '@prisma/client';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { TagEntity } from './tag.entity';
 
 @Injectable()
 export class TagService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    @InjectRepository(TagEntity)
+    private readonly tagRepository: Repository<TagEntity>
+  ) {}
 
-  async findAll(): Promise<any> {
-    const res = await this.prisma.tag.findMany();
-    const tags = res.map((t: Tag) => t.name);
-    return { tags };
+  async findAll(): Promise<TagEntity[]> {
+    return await this.tagRepository.find();
   }
+
 }

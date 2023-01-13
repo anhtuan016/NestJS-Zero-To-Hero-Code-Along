@@ -1,18 +1,15 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import {MiddlewareConsumer, Module, NestModule, RequestMethod} from '@nestjs/common';
 import { ProfileController } from './profile.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProfileService } from './profile.service';
 import { UserModule } from '../user/user.module';
-import { AuthMiddleware } from '../user/auth.middleware';
-import { PrismaService } from '../shared/services/prisma.service';
+import {UserEntity} from "../user/user.entity";
+import {FollowsEntity} from "./follows.entity";
+import {AuthMiddleware} from "../user/auth.middleware";
 
 @Module({
-  imports: [
-    UserModule
-  ],
-  providers: [
-    ProfileService,
-    PrismaService
-  ],
+  imports: [TypeOrmModule.forFeature([UserEntity, FollowsEntity]), UserModule],
+  providers: [ProfileService],
   controllers: [
     ProfileController
   ],

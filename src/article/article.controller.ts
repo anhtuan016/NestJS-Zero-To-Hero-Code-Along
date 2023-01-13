@@ -1,4 +1,5 @@
-import { Get, Post, Body, Put, Delete, Query, Param, Controller, HttpCode } from '@nestjs/common';
+import {Get, Post, Body, Put, Delete, Query, Param, Controller} from '@nestjs/common';
+import { Request } from 'express';
 import { ArticleService } from './article.service';
 import { CreateArticleDto, CreateCommentDto } from './dto';
 import { ArticlesRO, ArticleRO } from './article.interface';
@@ -21,9 +22,10 @@ export class ArticleController {
   @ApiOperation({ summary: 'Get all articles' })
   @ApiResponse({ status: 200, description: 'Return all articles.'})
   @Get()
-  async findAll(@User('id') userId: number, @Query() query): Promise<ArticlesRO> {
-    return await this.articleService.findAll(userId, query);
+  async findAll(@Query() query): Promise<ArticlesRO> {
+    return await this.articleService.findAll(query);
   }
+
 
   @ApiOperation({ summary: 'Get article feed' })
   @ApiResponse({ status: 200, description: 'Return article feed.'})
@@ -34,8 +36,8 @@ export class ArticleController {
   }
 
   @Get(':slug')
-  async findOne(@User('id') userId: number, @Param('slug') slug): Promise<ArticleRO> {
-    return await this.articleService.findOne(userId, slug);
+  async findOne(@Param('slug') slug): Promise<ArticleRO> {
+    return await this.articleService.findOne({slug});
   }
 
   @Get(':slug/comments')
@@ -55,14 +57,13 @@ export class ArticleController {
   @ApiResponse({ status: 201, description: 'The article has been successfully updated.'})
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Put(':slug')
-  async update(@User('id') userId: number, @Param() params, @Body('article') articleData: CreateArticleDto) {
+  async update(@Param() params, @Body('article') articleData: CreateArticleDto) {
     // Todo: update slug also when title gets changed
-    return this.articleService.update(userId, params.slug, articleData);
+    return this.articleService.update(params.slug, articleData);
   }
 
-  @HttpCode(204)
   @ApiOperation({ summary: 'Delete article' })
-  @ApiResponse({ status: 204, description: 'The article has been successfully deleted.'})
+  @ApiResponse({ status: 201, description: 'The article has been successfully deleted.'})
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Delete(':slug')
   async delete(@Param() params) {
@@ -73,13 +74,12 @@ export class ArticleController {
   @ApiResponse({ status: 201, description: 'The comment has been successfully created.'})
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Post(':slug/comments')
-  async createComment(@User('id') userId: number, @Param('slug') slug, @Body('comment') payload: CreateCommentDto) {
-    return await this.articleService.addComment(userId, slug, payload);
+  async createComment(@Param('slug') slug, @Body('comment') commentData: CreateCommentDto) {
+    return await this.articleService.addComment(slug, commentData);
   }
 
-  @HttpCode(204)
   @ApiOperation({ summary: 'Delete comment' })
-  @ApiResponse({ status: 204, description: 'The comment has been successfully deleted.'})
+  @ApiResponse({ status: 201, description: 'The article has been successfully deleted.'})
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @Delete(':slug/comments/:id')
   async deleteComment(@Param() params) {
