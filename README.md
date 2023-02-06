@@ -42,6 +42,9 @@ The branch `prisma` implements Prisma with a mySQL database.
 ##### TypeORM
 
 ----------
+generator command
+npx typeorm-model-generator -h localhost -d hnag -p 5432 -u postgres -x 1 -e postgres -o ./
+
 
 Create a new mysql database with the name `nestjsrealworld`\
 (or the name you specified in the ormconfig.json)

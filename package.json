@@ -10,7 +10,8 @@
     "start:prod": "node dist/main.js",
     "test": "jest --config=jest.json",
     "test:watch": "jest --watch --config=jest.json",
-    "test:coverage": "jest --config=jest.json --coverage --coverageDirectory=coverage"
+    "test:coverage": "jest --config=jest.json --coverage --coverageDirectory=coverage",
+    "generate-entities": "npx typeorm-model-generator -h localhost -d hnag -p 5432 -u postgres -x 1 -e postgres --namingStrategy=src/config/namingStrategy.ts --case-file none -o src/"
   },
   "repository": {
     "type": "git",
@@ -61,6 +62,7 @@
     "nodemon": "^2.0.20",
     "supertest": "^6.3.3",
     "ts-jest": "^29.0.4",
-    "ts-node": "^10.9.1"
+    "ts-node": "^10.9.1",
+    "typeorm-model-generator": "^0.4.6"
   }
 }

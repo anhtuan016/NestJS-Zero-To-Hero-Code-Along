@@ -6,7 +6,6 @@ import { InjectRepository } from '@nestjs/typeorm';
 @Injectable()
 export class TasksService {
     constructor(
-        @InjectRepository(Task)
         private taskRepository: TaskRepository
     ) { }
     async getTaskById(id: number) {
