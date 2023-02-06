@@ -7,6 +7,7 @@ import { ProfileModule } from './profile/profile.module';
 import { TagModule } from './tag/tag.module';
 import { TasksModule } from './tasks/tasks.module';
 import { typeOrmConfig } from './config/typeorm.config';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,7 +16,8 @@ import { typeOrmConfig } from './config/typeorm.config';
     // UserModule,
     // ProfileModule,
     // TagModule
-    TasksModule
+    TasksModule,
+    AuthModule
   ],
   controllers: [
     // AppController
